@@ -550,10 +550,10 @@ function App() {
             <div className="axis-line vertical" />
             <div className="axis-line horizontal" />
             <div className="axis-arrow axis-arrow-x">
-              <span>紧急 Urgency</span>
+              <span>紧急Urgency</span>
             </div>
             <div className="axis-arrow axis-arrow-y">
-              <span>重要 Importance</span>
+              <span>重要Importance</span>
             </div>
             <div className="axis-origin" aria-hidden="true" />
 

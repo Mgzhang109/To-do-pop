@@ -193,7 +193,7 @@
 }
 
 .axis-arrow-x {
-  right: 24px;
+  right: 10px;
   bottom: 50%;
   left: 50%;
   height: 0;
@@ -215,12 +215,12 @@
 }
 
 .axis-arrow-x span {
-  right: 12px;
-  top: 10px;
+  right: 8px;
+  top: 12px;
 }
 
 .axis-arrow-y {
-  top: 24px;
+  top: 10px;
   bottom: 50%;
   left: 50%;
   width: 0;
@@ -242,8 +242,8 @@
 }
 
 .axis-arrow-y span {
-  left: -118px;
-  top: 34px;
+  left: -112px;
+  top: 18px;
   transform: rotate(-90deg);
   transform-origin: right center;
 }
