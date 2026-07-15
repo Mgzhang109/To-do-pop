@@ -34,6 +34,13 @@
   line-height: 1.08;
 }
 
+.interaction-hint {
+  margin: 10px 0 0;
+  color: #63708a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .stats {
   display: flex;
   gap: 8px;
@@ -85,6 +92,8 @@
 
 .quadrant {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   width: 50%;
   height: 50%;
   padding: 16px;
@@ -113,6 +122,8 @@
 .quadrant-now {
   top: 0;
   right: 0;
+  align-items: flex-end;
+  text-align: right;
   background: linear-gradient(135deg, rgba(225, 83, 97, 0.14), rgba(255, 255, 255, 0.38));
 }
 
@@ -125,12 +136,16 @@
 .quadrant-delegate {
   right: 0;
   bottom: 0;
+  align-items: flex-end;
+  justify-content: flex-end;
+  text-align: right;
   background: linear-gradient(45deg, rgba(224, 162, 45, 0.16), rgba(255, 255, 255, 0.38));
 }
 
 .quadrant-someday {
   left: 0;
   bottom: 0;
+  justify-content: flex-end;
   background: linear-gradient(315deg, rgba(31, 157, 138, 0.12), rgba(255, 255, 255, 0.38));
 }
 
@@ -155,31 +170,103 @@
   height: 1px;
 }
 
-.axis-label {
+.axis-arrow,
+.axis-origin {
   position: absolute;
-  z-index: 4;
-  color: #5d6c87;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.axis-arrow::before,
+.axis-arrow::after {
+  content: '';
+  position: absolute;
+}
+
+.axis-arrow span {
+  position: absolute;
+  color: #42516b;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
-.axis-x {
-  right: 28px;
-  bottom: 16px;
+.axis-arrow-x {
+  right: 24px;
+  bottom: 50%;
+  left: 50%;
+  height: 0;
 }
 
-.axis-y {
-  top: 50%;
-  left: 12px;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: center;
+.axis-arrow-x::before {
+  right: 0;
+  left: 0;
+  top: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(66, 81, 107, 0.2), rgba(66, 81, 107, 0.64));
+}
+
+.axis-arrow-x::after {
+  right: -2px;
+  top: -6px;
+  border: 6px solid transparent;
+  border-left-color: rgba(66, 81, 107, 0.72);
+}
+
+.axis-arrow-x span {
+  right: 12px;
+  top: 10px;
+}
+
+.axis-arrow-y {
+  top: 24px;
+  bottom: 50%;
+  left: 50%;
+  width: 0;
+}
+
+.axis-arrow-y::before {
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: linear-gradient(0deg, rgba(66, 81, 107, 0.2), rgba(66, 81, 107, 0.64));
+}
+
+.axis-arrow-y::after {
+  top: -2px;
+  left: -6px;
+  border: 6px solid transparent;
+  border-bottom-color: rgba(66, 81, 107, 0.72);
+}
+
+.axis-arrow-y span {
+  left: -118px;
+  top: 34px;
+  transform: rotate(-90deg);
+  transform-origin: right center;
+}
+
+.axis-origin {
+  left: 50%;
+  bottom: 50%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(66, 81, 107, 0.58);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(66, 81, 107, 0.18);
+  transform: translate(-50%, 50%);
 }
 
 .bubble-wrap {
   position: absolute;
   z-index: 3;
   transform: translate(-50%, 50%);
+  animation: bubble-float var(--float-duration, 5.4s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  will-change: transform;
 }
 
 .bubble {
@@ -190,17 +277,29 @@
   height: var(--bubble-size);
   padding: 10px;
   overflow: hidden;
-  color: #ffffff;
+  color: #1d293b;
   background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0 7%, transparent 8%),
-    radial-gradient(circle at 64% 72%, rgba(255, 255, 255, 0.2), transparent 36%),
-    linear-gradient(145deg, color-mix(in srgb, var(--bubble-color), #ffffff 16%), var(--bubble-color));
-  border: 0;
+    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.7) 32%, transparent 46%),
+    radial-gradient(ellipse at 28% 20%, rgba(255, 255, 255, 0.96) 0 9%, transparent 11%),
+    radial-gradient(ellipse at 36% 32%, rgba(255, 255, 255, 0.62) 0 20%, transparent 38%),
+    radial-gradient(circle at 64% 26%, rgba(255, 255, 255, 0.34), transparent 28%),
+    radial-gradient(circle at 72% 82%, color-mix(in srgb, var(--bubble-color), transparent 70%), transparent 48%),
+    radial-gradient(circle at 18% 78%, color-mix(in srgb, var(--bubble-color), #ffffff 62%), transparent 38%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--bubble-color), #ffffff 82%),
+      color-mix(in srgb, var(--bubble-color), #ffffff 62%) 54%,
+      color-mix(in srgb, var(--bubble-color), #ffffff 34%)
+    );
+  border: 1px solid rgba(255, 255, 255, 0.92);
   border-radius: 999px;
   box-shadow:
-    inset -10px -12px 22px rgba(0, 0, 0, 0.18),
-    inset 8px 10px 18px rgba(255, 255, 255, 0.18),
-    0 14px 28px color-mix(in srgb, var(--bubble-color), transparent 62%);
+    inset -13px -16px 26px rgba(71, 85, 105, 0.07),
+    inset 12px 14px 25px rgba(255, 255, 255, 0.84),
+    inset 0 0 18px rgba(255, 255, 255, 0.34),
+    0 15px 32px color-mix(in srgb, var(--bubble-color), transparent 74%),
+    0 3px 10px rgba(30, 41, 59, 0.08);
+  backdrop-filter: blur(12px) saturate(1.04);
   cursor: grab;
   transition:
     transform 160ms ease,
@@ -211,9 +310,11 @@
 .bubble:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow:
-    inset -10px -12px 22px rgba(0, 0, 0, 0.18),
-    inset 8px 10px 18px rgba(255, 255, 255, 0.18),
-    0 18px 36px color-mix(in srgb, var(--bubble-color), transparent 48%);
+    inset -13px -16px 26px rgba(71, 85, 105, 0.07),
+    inset 12px 14px 25px rgba(255, 255, 255, 0.88),
+    inset 0 0 20px rgba(255, 255, 255, 0.38),
+    0 19px 38px color-mix(in srgb, var(--bubble-color), transparent 64%),
+    0 5px 14px rgba(30, 41, 59, 0.1);
 }
 
 .bubble:active {
@@ -227,27 +328,16 @@
   display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
-  color: #ffffff;
+  color: #182235;
   font-size: clamp(10px, calc(var(--bubble-size) / 7), 15px);
   font-weight: 900;
   line-height: 1.14;
   text-align: center;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.76);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
 
-.bubble-meta {
-  position: absolute;
-  right: 9px;
-  bottom: 8px;
-  z-index: 2;
-  font-size: 9px;
-  font-weight: 900;
-  opacity: 0.82;
-}
-
-.bubble-edit,
 .project-progress {
   position: absolute;
   z-index: 4;
@@ -256,23 +346,13 @@
   font-weight: 900;
 }
 
-.bubble-edit {
-  top: -10px;
-  right: -12px;
-  padding: 4px 8px;
-  color: #26344e;
-  background: #ffffff;
-  border: 1px solid #d7dfeb;
-  box-shadow: 0 8px 18px rgba(38, 52, 78, 0.12);
-  cursor: pointer;
-}
-
 .project-progress {
   bottom: -10px;
   left: 50%;
   padding: 3px 8px;
   color: #ffffff;
   background: #172033;
+  pointer-events: none;
   transform: translateX(-50%);
 }
 
@@ -292,10 +372,14 @@
   position: absolute;
   width: 19px;
   height: 19px;
-  border: 2px solid rgba(255, 255, 255, 0.58);
+  border: 2px solid rgba(255, 255, 255, 0.78);
   border-radius: 999px;
-  background: var(--child-color);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.9) 0 22%, transparent 24%),
+    var(--child-color);
+  box-shadow:
+    inset 4px 5px 8px rgba(255, 255, 255, 0.45),
+    0 4px 10px rgba(30, 41, 59, 0.16);
 }
 
 .child-cloud i:nth-child(1) {
@@ -387,6 +471,29 @@
 .task-form input[type='range'] {
   padding: 0;
   accent-color: #4c6fdc;
+}
+
+.color-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.color-control input[type='color'] {
+  min-height: 42px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.color-control .secondary {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 11px;
+  color: #26344e;
+  background: #e9eef6;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .field-grid {
@@ -605,6 +712,16 @@ button {
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) scale(5);
+  }
+}
+
+@keyframes bubble-float {
+  0%,
+  100% {
+    transform: translate(-50%, 50%) translateY(-3px);
+  }
+  50% {
+    transform: translate(-50%, 50%) translateY(5px);
   }
 }
 

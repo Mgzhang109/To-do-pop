@@ -15,6 +15,7 @@ type Task = {
   urgency: number
   importance: number
   size: number
+  deadline?: string
   parentId?: string
   createdAt: string
   updatedAt: string
@@ -31,7 +32,18 @@ type Explosion = {
 
 const STORAGE_KEY = 'to-do-pop.tasks.v1'
 
-const palette = ['#1f9d8a', '#e15361', '#e0a22d', '#4c6fdc', '#9356c8', '#d96528']
+const macaronPalette = [
+  '#9ee6d8',
+  '#ffd6df',
+  '#ffe6a7',
+  '#c8d7ff',
+  '#dcc8ff',
+  '#ffc9a8',
+  '#bde7ff',
+  '#d9f5b8',
+  '#f8c9ec',
+  '#c6f1d6',
+]
 
 const statusLabels: Record<TaskStatus, string> = {
   todo: '待办 TO DO',
@@ -70,10 +82,11 @@ const seedTasks: Task[] = [
     status: 'doing',
     kind: 'project',
     category: '产品',
-    color: '#4c6fdc',
+    color: '#c8d7ff',
     urgency: 72,
     importance: 86,
     size: 88,
+    deadline: '2026-07-20T18:00',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -84,10 +97,11 @@ const seedTasks: Task[] = [
     status: 'doing',
     kind: 'task',
     category: '产品',
-    color: '#4c6fdc',
+    color: '#c8d7ff',
     urgency: 78,
     importance: 88,
     size: 34,
+    deadline: '2026-07-17T12:00',
     parentId: 'project-launch',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -99,10 +113,11 @@ const seedTasks: Task[] = [
     status: 'todo',
     kind: 'task',
     category: '动效',
-    color: '#e15361',
+    color: '#ffd6df',
     urgency: 58,
     importance: 74,
     size: 30,
+    deadline: '2026-07-19T16:30',
     parentId: 'project-launch',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -114,10 +129,11 @@ const seedTasks: Task[] = [
     status: 'todo',
     kind: 'task',
     category: '生活',
-    color: '#1f9d8a',
+    color: '#9ee6d8',
     urgency: 88,
     importance: 42,
     size: 42,
+    deadline: '2026-07-16T20:00',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -128,7 +144,7 @@ const seedTasks: Task[] = [
     status: 'todo',
     kind: 'task',
     category: '学习',
-    color: '#9356c8',
+    color: '#dcc8ff',
     urgency: 28,
     importance: 68,
     size: 46,
@@ -137,21 +153,28 @@ const seedTasks: Task[] = [
   },
 ]
 
-const defaultDraft = {
-  title: '',
-  description: '',
-  category: '工作',
-  status: 'todo' as TaskStatus,
-  kind: 'task' as TaskKind,
-  urgency: 55,
-  importance: 60,
-  size: 48,
-  color: palette[0],
-  parentId: '',
-}
-
 function clamp(value: number, min = 0, max = 100) {
   return Math.min(max, Math.max(min, value))
+}
+
+function randomMacaronColor() {
+  return macaronPalette[Math.floor(Math.random() * macaronPalette.length)]
+}
+
+function createDefaultDraft() {
+  return {
+    title: '',
+    description: '',
+    category: '工作',
+    status: 'todo' as TaskStatus,
+    kind: 'task' as TaskKind,
+    urgency: 55,
+    importance: 60,
+    size: 48,
+    color: randomMacaronColor(),
+    deadline: '',
+    parentId: '',
+  }
 }
 
 function loadTasks() {
@@ -199,8 +222,9 @@ function App() {
   const boardRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{ id: string; moved: boolean } | null>(null)
   const suppressClickRef = useRef<string | null>(null)
+  const clickTimerRef = useRef<number | null>(null)
   const [tasks, setTasks] = useState<Task[]>(loadTasks)
-  const [draft, setDraft] = useState(defaultDraft)
+  const [draft, setDraft] = useState(createDefaultDraft)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [explosions, setExplosions] = useState<Explosion[]>([])
 
@@ -225,7 +249,7 @@ function App() {
   }, [tasks])
 
   function resetDraft() {
-    setDraft(defaultDraft)
+    setDraft(createDefaultDraft())
     setEditingId(null)
   }
 
@@ -250,6 +274,7 @@ function App() {
                 urgency: Number(draft.urgency),
                 importance: Number(draft.importance),
                 size: Number(draft.size),
+                deadline: draft.deadline || undefined,
                 parentId: draft.kind === 'project' ? undefined : draft.parentId || undefined,
                 updatedAt: now,
                 completedAt: draft.status === 'done' ? task.completedAt ?? now : undefined,
@@ -272,6 +297,7 @@ function App() {
           urgency: Number(draft.urgency),
           importance: Number(draft.importance),
           size: Number(draft.size),
+          deadline: draft.deadline || undefined,
           parentId: draft.kind === 'project' ? undefined : draft.parentId || undefined,
           createdAt: now,
           updatedAt: now,
@@ -295,6 +321,7 @@ function App() {
       importance: task.importance,
       size: task.size,
       color: task.color,
+      deadline: task.deadline ?? '',
       parentId: task.parentId ?? '',
     })
   }
@@ -389,8 +416,41 @@ function App() {
     dragRef.current = { id: task.id, moved: false }
   }
 
+  function handleBoardClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (!boardRef.current || event.target !== event.currentTarget) return
+    const rect = boardRef.current.getBoundingClientRect()
+    const urgency = clamp(((event.clientX - rect.left) / rect.width) * 100)
+    const importance = clamp(100 - ((event.clientY - rect.top) / rect.height) * 100)
+    if (clickTimerRef.current) {
+      window.clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
+    setEditingId(null)
+    setDraft({
+      ...createDefaultDraft(),
+      urgency: Math.round(urgency),
+      importance: Math.round(importance),
+    })
+  }
+
   function finishBubbleClick(event: React.MouseEvent<HTMLButtonElement>, task: Task) {
+    event.stopPropagation()
     if (suppressClickRef.current === task.id) return
+    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current)
+    clickTimerRef.current = window.setTimeout(() => {
+      editTask(task)
+      clickTimerRef.current = null
+    }, 220)
+    void event
+  }
+
+  function finishBubbleDoubleClick(event: React.MouseEvent<HTMLButtonElement>, task: Task) {
+    event.stopPropagation()
+    if (suppressClickRef.current === task.id) return
+    if (clickTimerRef.current) {
+      window.clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
     const rect = event.currentTarget.getBoundingClientRect()
     completeTask(task, {
       x: rect.left + rect.width / 2,
@@ -414,6 +474,9 @@ function App() {
         <div>
           <p className="eyebrow">To-Do Pop</p>
           <h1>To-Do Pop</h1>
+          <p className="interaction-hint">
+            单击空白处添加气泡，单击气泡编辑，双击气泡完成爆破，拖动气泡调整坐标。
+          </p>
         </div>
         <div className="stats">
           <span>{tasks.filter((task) => task.status !== 'done').length} active</span>
@@ -423,11 +486,10 @@ function App() {
 
       <section className="workspace">
         <div className="board-panel">
-          <div className="axis-label axis-x">紧急程度 Urgency</div>
-          <div className="axis-label axis-y">重要程度 Importance</div>
           <div
             ref={boardRef}
             className="matrix-board"
+            onClick={handleBoardClick}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           >
@@ -439,8 +501,15 @@ function App() {
             ))}
             <div className="axis-line vertical" />
             <div className="axis-line horizontal" />
+            <div className="axis-arrow axis-arrow-x">
+              <span>紧急 Urgency</span>
+            </div>
+            <div className="axis-arrow axis-arrow-y">
+              <span>重要 Importance</span>
+            </div>
+            <div className="axis-origin" aria-hidden="true" />
 
-            {visibleBubbles.map((task) => {
+            {visibleBubbles.map((task, index) => {
               const children = childMap[task.id] ?? []
               const doneChildren = children.filter((child) => child.status === 'done').length
               const bubbleSize = task.kind === 'project' ? Math.max(task.size, 78) : task.size
@@ -453,12 +522,15 @@ function App() {
                     bottom: `${task.importance}%`,
                     width: bubbleSize,
                     height: bubbleSize,
-                  }}
+                    '--float-duration': `${4.8 + (index % 4) * 0.55}s`,
+                    '--float-delay': `${(index % 5) * -0.45}s`,
+                  } as React.CSSProperties}
                 >
                   <button
                     className="bubble"
                     type="button"
                     onClick={(event) => finishBubbleClick(event, task)}
+                    onDoubleClick={(event) => finishBubbleDoubleClick(event, task)}
                     onPointerDown={(event) => beginDrag(event, task)}
                     style={
                       {
@@ -466,10 +538,9 @@ function App() {
                         '--bubble-size': `${bubbleSize}px`,
                       } as React.CSSProperties
                     }
-                    title="拖动改变坐标，点击完成并爆破"
+                    title="单击编辑，双击完成爆破，拖动改变坐标"
                   >
                     <span className="bubble-title">{task.title}</span>
-                    <span className="bubble-meta">{task.status.toUpperCase()}</span>
                     {task.kind === 'project' && (
                       <span className="child-cloud" aria-label="project subtasks">
                         {children.slice(0, 6).map((child) => (
@@ -486,9 +557,6 @@ function App() {
                       </span>
                     )}
                   </button>
-                  <button className="bubble-edit" type="button" onClick={() => editTask(task)}>
-                    编辑
-                  </button>
                   {task.kind === 'project' && (
                     <span className="project-progress">
                       {doneChildren}/{children.length}
@@ -502,7 +570,7 @@ function App() {
 
         <aside className="control-panel">
           <form className="task-form" onSubmit={saveTask}>
-            <h2>{editingId ? '编辑气泡' : '新建气泡'}</h2>
+            <h2>{editingId ? '编辑气泡' : '添加气泡'}</h2>
             <label>
               标题
               <input
@@ -544,6 +612,14 @@ function App() {
                 </select>
               </label>
             </div>
+            <label>
+              截止时间 deadline
+              <input
+                type="datetime-local"
+                value={draft.deadline}
+                onChange={(event) => setDraft({ ...draft, deadline: event.target.value })}
+              />
+            </label>
             {draft.kind === 'task' && (
               <label>
                 所属大项目
@@ -570,16 +646,21 @@ function App() {
               </label>
               <label>
                 颜色
-                <select
-                  value={draft.color}
-                  onChange={(event) => setDraft({ ...draft, color: event.target.value })}
-                >
-                  {palette.map((color) => (
-                    <option key={color} value={color}>
-                      {color}
-                    </option>
-                  ))}
-                </select>
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={draft.color}
+                    onChange={(event) => setDraft({ ...draft, color: event.target.value })}
+                    aria-label="手动修改气泡颜色"
+                  />
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => setDraft({ ...draft, color: randomMacaronColor() })}
+                  >
+                    随机
+                  </button>
+                </div>
               </label>
             </div>
             <label>
@@ -641,6 +722,7 @@ function App() {
                       <small>
                         {task.kind === 'project' ? '大项目' : '小任务'} · {task.category} · U
                         {task.urgency}/I{task.importance}
+                        {task.deadline ? ` · deadline ${task.deadline.replace('T', ' ')}` : ''}
                       </small>
                     </div>
                     <div className="row-actions">
