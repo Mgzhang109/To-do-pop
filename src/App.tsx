@@ -30,6 +30,20 @@ type Explosion = {
   color: string
 }
 
+type BubbleInteraction =
+  | {
+      id: string
+      moved: boolean
+      mode: 'move'
+    }
+  | {
+      id: string
+      moved: boolean
+      mode: 'resize'
+      originX: number
+      originY: number
+    }
+
 const STORAGE_KEY = 'to-do-pop.tasks.v1'
 
 const macaronPalette = [
@@ -157,6 +171,10 @@ function clamp(value: number, min = 0, max = 100) {
   return Math.min(max, Math.max(min, value))
 }
 
+function clampBubbleSize(value: number) {
+  return clamp(value, 32, 130)
+}
+
 function randomMacaronColor() {
   return macaronPalette[Math.floor(Math.random() * macaronPalette.length)]
 }
@@ -220,7 +238,7 @@ function playPopSound() {
 
 function App() {
   const boardRef = useRef<HTMLDivElement | null>(null)
-  const dragRef = useRef<{ id: string; moved: boolean } | null>(null)
+  const dragRef = useRef<BubbleInteraction | null>(null)
   const suppressClickRef = useRef<string | null>(null)
   const clickTimerRef = useRef<number | null>(null)
   const [tasks, setTasks] = useState<Task[]>(loadTasks)
@@ -392,10 +410,17 @@ function App() {
   function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
     const dragState = dragRef.current
     if (!dragState || !boardRef.current) return
+    dragState.moved = true
+
+    if (dragState.mode === 'resize') {
+      const distance = Math.hypot(event.clientX - dragState.originX, event.clientY - dragState.originY)
+      updateTask(dragState.id, { size: Math.round(clampBubbleSize(distance * 2)) })
+      return
+    }
+
     const rect = boardRef.current.getBoundingClientRect()
     const x = clamp(((event.clientX - rect.left) / rect.width) * 100)
     const y = clamp(100 - ((event.clientY - rect.top) / rect.height) * 100)
-    dragState.moved = true
     updateTask(dragState.id, { urgency: Math.round(x), importance: Math.round(y) })
   }
 
@@ -413,7 +438,30 @@ function App() {
 
   function beginDrag(event: React.PointerEvent<HTMLButtonElement>, task: Task) {
     event.currentTarget.setPointerCapture(event.pointerId)
-    dragRef.current = { id: task.id, moved: false }
+    const bubbleRect = event.currentTarget.getBoundingClientRect()
+    const originX = bubbleRect.left + bubbleRect.width / 2
+    const originY = bubbleRect.top + bubbleRect.height / 2
+    const radius = bubbleRect.width / 2
+    const distance = Math.hypot(event.clientX - originX, event.clientY - originY)
+    const isOnEdge = distance >= radius - 12
+
+    if (!isOnEdge) {
+      dragRef.current = { id: task.id, moved: false, mode: 'move' }
+      return
+    }
+
+    event.preventDefault()
+    dragRef.current = {
+      id: task.id,
+      moved: false,
+      mode: 'resize',
+      originX,
+      originY,
+    }
+    if (clickTimerRef.current) {
+      window.clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
   }
 
   function handleBoardClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -541,6 +589,7 @@ function App() {
                     title="单击编辑，双击完成爆破，拖动改变坐标"
                   >
                     <span className="bubble-title">{task.title}</span>
+                    <span className="bubble-resize-ring" aria-hidden="true" />
                     {task.kind === 'project' && (
                       <span className="child-cloud" aria-label="project subtasks">
                         {children.slice(0, 6).map((child) => (

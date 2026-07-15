@@ -338,6 +338,34 @@
   -webkit-line-clamp: 3;
 }
 
+.bubble-resize-ring {
+  position: absolute;
+  inset: -1px;
+  z-index: 3;
+  border: 8px solid transparent;
+  border-radius: 999px;
+  cursor: nwse-resize;
+  pointer-events: none;
+}
+
+.bubble-resize-ring::after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid rgba(66, 81, 107, 0.38);
+  border-bottom: 2px solid rgba(66, 81, 107, 0.38);
+  border-radius: 0 0 999px;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.bubble:hover .bubble-resize-ring::after {
+  opacity: 1;
+}
+
 .project-progress {
   position: absolute;
   z-index: 4;
