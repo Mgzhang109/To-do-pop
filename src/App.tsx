@@ -412,8 +412,8 @@ function App() {
     <main className="app-shell">
       <section className="topbar">
         <div>
-          <p className="eyebrow">To-do Pop</p>
-          <h1>重要紧急四象限气泡待办</h1>
+          <p className="eyebrow">To-Do Pop</p>
+          <h1>To-Do Pop</h1>
         </div>
         <div className="stats">
           <span>{tasks.filter((task) => task.status !== 'done').length} active</span>
